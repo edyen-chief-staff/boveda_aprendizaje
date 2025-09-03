@@ -188,4 +188,432 @@
       <div class="card">
         <h3 style="margin-top:0;color:var(--navy)">Mi progreso</h3>
         <table id="progressTable">
-          <thead><tr><th>Video</th><th>Estado</th><t
+          <thead><tr><th>Video</th><th>Estado</th><th>Última apertura</th><th>Visto el</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ADMIN -->
+    <section id="view-admin" class="hide">
+      <div class="card" style="margin-bottom:16px">
+        <h3 style="margin-top:0;color:var(--navy)">Nuevo video</h3>
+        <form id="videoForm">
+          <div class="row cols-2">
+            <div>
+              <label>Título</label>
+              <input type="text" id="f_titulo" required>
+            </div>
+            <div>
+              <label>URL del video</label>
+              <input type="url" id="f_url" placeholder="https://..." required>
+            </div>
+          </div>
+          <label>Descripción</label>
+          <textarea id="f_desc" placeholder="Breve descripción"></textarea>
+          <div class="row cols-2">
+            <div>
+              <label>Tags (separados por comas)</label>
+              <input type="text" id="f_tags" placeholder="onboarding, seguridad">
+            </div>
+            <div class="row cols-2">
+              <div>
+                <label>Fecha límite</label>
+                <input type="date" id="f_deadline">
+              </div>
+              <div>
+                <label>&nbsp;</label>
+                <div class="center">
+                  <label class="mini muted"><input type="checkbox" id="f_obl"> Obligatorio</label>
+                  <label class="mini muted"><input type="checkbox" id="f_act" checked> Activo</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="btn-group" style="margin-top:12px">
+            <button type="submit" class="btn primary" id="submitBtn">Guardar video</button>
+            <button type="button" class="btn ghost" id="resetBtn">Limpiar</button>
+          </div>
+          <input type="hidden" id="f_id">
+        </form>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="topbar">
+          <h3 style="margin:0;color:var(--navy)">Listado de videos</h3>
+          <div class="spacer"></div>
+          <label class="mini muted"><input type="checkbox" id="adm_onlyObl"> Solo obligatorios</label>
+          <label class="mini muted"><input type="checkbox" id="adm_onlyActive" checked> Solo activos</label>
+          <label class="btn ghost icon">
+            Importar CSV
+            <input type="file" id="csvInput" accept=".csv" style="display:none">
+          </label>
+        </div>
+        <div class="divider"></div>
+        <table id="adminTable">
+          <thead>
+            <tr>
+              <th>Título</th><th>Obl.</th><th>Activo</th><th>Fecha límite</th><th>Tags</th><th class="right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- REGISTRO GLOBAL -->
+    <section id="view-reg" class="hide">
+      <div class="card">
+        <h3 style="margin-top:0;color:var(--navy)">Registro de vistas (quién vio qué)</h3>
+        <table id="logTable">
+          <thead><tr><th>Usuario</th><th>Video</th><th>Evento</th><th>Fecha/Hora</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+  // ====== Configuración demo (admin) ======
+  const ADMIN_EMAIL = "eric.barrera@edyen.com";
+  const ADMIN_PASS  = "1414";
+
+  // ====== Claves de almacenamiento ======
+  const LS_VIDEOS = 'lv_videos';
+  const LS_VIEWS  = 'lv_views'; // { userName: { videoId: {...} } }
+  const LS_LOG    = 'lv_log';   // [{user, videoId, video, event, at}]
+  const LS_ROLE   = 'lv_role';  // 'admin' | 'user'
+  const LS_USER   = 'lv_user';  // nombre o email
+
+  // ====== Utilidades ======
+  const $ = s => document.querySelector(s);
+  const fmtDateTime = ts => ts ? new Date(ts).toLocaleString() : '—';
+  const ensure = (k, def) => (localStorage.getItem(k) ?? localStorage.setItem(k, JSON.stringify(def)), JSON.parse(localStorage.getItem(k)));
+  const save   = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+  const uid    = () => String(Date.now()) + Math.random().toString(16).slice(2);
+  const iconFor = url => /youtu/i.test(url) ? 'YouTube' : /vimeo/i.test(url) ? 'Vimeo' : 'Link';
+
+  // ====== Semilla inicial ======
+  function seedIfEmpty(){
+    const videos = ensure(LS_VIDEOS, []);
+    if(!videos.length){
+      save(LS_VIDEOS, [
+        {id:uid(), titulo:'Onboarding general', url:'https://youtu.be/dQw4w9WgXcQ', descripcion:'Bienvenida y visión.', tags:'onboarding, cultura', obligatorio:true,  fecha_limite:'', activo:true, created_at:Date.now(), updated_at:Date.now()},
+        {id:uid(), titulo:'Cultura y valores',  url:'https://vimeo.com/76979871',  descripcion:'Nuestro ADN.',       tags:'cultura',             obligatorio:false, fecha_limite:'', activo:true, created_at:Date.now(), updated_at:Date.now()},
+        {id:uid(), titulo:'Políticas de seguridad', url:'https://example.com/video.mp4', descripcion:'Buenas prácticas.', tags:'seguridad, ISO', obligatorio:true, fecha_limite:'', activo:true, created_at:Date.now(), updated_at:Date.now()}
+      ]);
+    }
+    ensure(LS_VIEWS, {});
+    ensure(LS_LOG, []);
+  }
+  seedIfEmpty();
+
+  // ====== Acceso / Sesión ======
+  const viewAccess = $('#view-access');
+  const navTabs = $('#navTabs');
+  const btnLogout = $('#btnLogout');
+  const sessionInfo = $('#sessionInfo');
+
+  function setSession(role, identifier){
+    localStorage.setItem(LS_ROLE, role);
+    localStorage.setItem(LS_USER, identifier);
+    sessionInfo.textContent = `${identifier} (${role})`;
+    btnLogout.classList.remove('hide');
+  }
+
+  function clearSession(){
+    localStorage.removeItem(LS_ROLE);
+    localStorage.removeItem(LS_USER);
+    sessionInfo.textContent = '';
+    btnLogout.classList.add('hide');
+    switchToAccess();
+  }
+
+  btnLogout.onclick = clearSession;
+
+  $('#btnUserEnter').onclick = ()=>{
+    const name = $('#userName').value.trim();
+    if(!name){ alert('Escribe tu nombre.'); return; }
+    setSession('user', name);
+    switchTab('user');
+  };
+
+  $('#btnAdminLogin').onclick = ()=>{
+    const email = $('#admEmail').value.trim();
+    const pass  = $('#admPass').value.trim();
+    if(email===ADMIN_EMAIL && pass===ADMIN_PASS){
+      setSession('admin', email);
+      switchTab('admin');
+    }else{
+      alert('Credenciales inválidas.');
+    }
+  };
+
+  function restoreSession(){
+    const role = localStorage.getItem(LS_ROLE);
+    const who  = localStorage.getItem(LS_USER);
+    if(role && who){
+      sessionInfo.textContent = `${who} (${role})`;
+      btnLogout.classList.remove('hide');
+      switchTab(role==='admin'?'admin':'user');
+    }else{
+      switchToAccess();
+    }
+  }
+
+  function switchToAccess(){
+    viewAccess.classList.remove('hide');
+    navTabs.classList.add('hide');
+    $('#view-user').classList.add('hide');
+    $('#view-admin').classList.add('hide');
+    $('#view-reg').classList.add('hide');
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  }
+
+  // ====== Tabs ======
+  $('#tab-user').onclick  = ()=>switchTab('user');
+  $('#tab-admin').onclick = ()=>switchTab('admin');
+  $('#tab-reg').onclick   = ()=>switchTab('reg');
+
+  function switchTab(name){
+    const role = localStorage.getItem(LS_ROLE)||'user';
+    viewAccess.classList.add('hide');
+    navTabs.classList.remove('hide');
+    $('#view-user').classList.add('hide');
+    $('#view-admin').classList.add('hide');
+    $('#view-reg').classList.add('hide');
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+
+    // control de visibilidad de pestaña admin
+    if(role==='admin'){ $('#tab-admin').classList.remove('hide'); }
+    else { $('#tab-admin').classList.add('hide'); }
+
+    if(name==='user'){ $('#view-user').classList.remove('hide'); $('#tab-user').classList.add('active'); renderUser(); }
+    if(name==='admin' && role==='admin'){ $('#view-admin').classList.remove('hide'); $('#tab-admin').classList.add('active'); renderAdmin(); }
+    if(name==='reg'){ $('#view-reg').classList.remove('hide'); $('#tab-reg').classList.add('active'); renderLog(); }
+  }
+
+  // ====== Usuario: listado y progreso ======
+  const videoList = $('#videoList');
+  const onlyObl = $('#onlyObl'), onlyActive = $('#onlyActive'), search = $('#search');
+  [onlyObl, onlyActive, search].forEach(el=>el.addEventListener('input', renderUser));
+
+  function renderUser(){
+    const name = localStorage.getItem(LS_USER) || '';
+    const vids = JSON.parse(localStorage.getItem(LS_VIDEOS)) || [];
+    const views = JSON.parse(localStorage.getItem(LS_VIEWS)) || {};
+    const q = (search.value||'').trim().toLowerCase();
+
+    const filtered = vids.filter(v=>{
+      if(onlyObl.checked && !v.obligatorio) return false;
+      if(onlyActive.checked && !v.activo) return false;
+      if(!q) return true;
+      return (v.titulo+v.descripcion+v.tags).toLowerCase().includes(q);
+    });
+
+    videoList.innerHTML = filtered.map(v=>{
+      const my = (views[name]||{})[v.id]||{};
+      const isVisto = my.status==='visto';
+      const tags = (v.tags||'').split(',').map(s=>s.trim()).filter(Boolean);
+      return `
+        <article class="card">
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div class="pill mini">${iconFor(v.url)}</div>
+            ${v.obligatorio ? `<span class="badge obl">Obligatorio</span>` : ``}
+            ${isVisto ? `<span class="badge visto">Visto</span>` : ``}
+            ${v.fecha_limite ? `<span class="badge" title="Fecha límite">⏰ ${v.fecha_limite}</span>` : ``}
+          </div>
+          <h3 style="margin:.6rem 0 .2rem;color:var(--ink)">${v.titulo}</h3>
+          <p class="muted" style="margin:.2rem 0 .6rem">${v.descripcion||''}</p>
+          <div>${tags.map(t=>`<span class="tag">#${t}</span>`).join('')}</div>
+          <div class="btn-group" style="margin-top:12px">
+            <button class="btn primary" onclick="openVideo('${v.id}')">Ver video</button>
+            <button class="btn ghost" ${isVisto?'disabled':''} onclick="markSeen('${v.id}')">${isVisto?'Marcado como visto':'Marcar como visto'}</button>
+          </div>
+        </article>
+      `;
+    }).join('') || `<div class="card">No hay videos que coincidan.</div>`;
+
+    // Progreso personal
+    const tbody = $('#progressTable tbody'); tbody.innerHTML = '';
+    const myV = views[name]||{};
+    (JSON.parse(localStorage.getItem(LS_VIDEOS))||[]).forEach(v=>{
+      const s = myV[v.id]||{};
+      tbody.insertAdjacentHTML('beforeend', `
+        <tr>
+          <td>${v.titulo}</td>
+          <td>${s.status==='visto' ? '<span class="badge visto">Visto</span>' : '—'}</td>
+          <td>${fmtDateTime(s.openedAt)}</td>
+          <td>${fmtDateTime(s.seenAt)}</td>
+        </tr>
+      `);
+    });
+  }
+
+  window.openVideo = (id)=>{
+    const vs = JSON.parse(localStorage.getItem(LS_VIDEOS))||[];
+    const v = vs.find(x=>x.id===id); if(!v) return;
+    const name = localStorage.getItem(LS_USER)||'Invitado';
+    const views = ensure(LS_VIEWS, {});
+    const my = views[name] = views[name] || {};
+    const rec = my[id] = my[id] || {};
+    rec.openedAt = Date.now();
+    save(LS_VIEWS, views);
+
+    const log = ensure(LS_LOG, []); log.push({user:name, videoId:id, video:v.titulo, event:'open', at:Date.now()}); save(LS_LOG, log);
+
+    window.open(v.url, '_blank', 'noopener');
+    renderUser();
+  };
+
+  window.markSeen = (id)=>{
+    const name = localStorage.getItem(LS_USER)||'Invitado';
+    const views = ensure(LS_VIEWS, {});
+    const my = views[name] = views[name] || {};
+    const rec = my[id] = my[id] || {};
+    rec.status='visto'; rec.seenAt = Date.now();
+    save(LS_VIEWS, views);
+
+    const vs = JSON.parse(localStorage.getItem(LS_VIDEOS))||[];
+    const v = vs.find(x=>x.id===id);
+    const log = ensure(LS_LOG, []); log.push({user:name, videoId:id, video:v?.titulo||'', event:'seen', at:Date.now()}); save(LS_LOG, log);
+
+    renderUser();
+  };
+
+  // ====== Admin: CRUD ======
+  const form = $('#videoForm');
+  const fields = {
+    id:$('#f_id'), titulo:$('#f_titulo'), url:$('#f_url'), desc:$('#f_desc'),
+    tags:$('#f_tags'), deadline:$('#f_deadline'), obl:$('#f_obl'), act:$('#f_act')
+  };
+  $('#resetBtn').onclick = ()=>{ form.reset(); fields.id.value=''; fields.act.checked=true; };
+
+  form.addEventListener('submit', e=>{
+    e.preventDefault();
+    try{ new URL(fields.url.value); }catch{ alert('URL inválida.'); return; }
+    const vs = JSON.parse(localStorage.getItem(LS_VIDEOS))||[];
+    const now = Date.now();
+    if(fields.id.value){
+      const i = vs.findIndex(x=>x.id===fields.id.value);
+      if(i>-1){
+        vs[i] = {...vs[i],
+          titulo:fields.titulo.value.trim(),
+          url:fields.url.value.trim(),
+          descripcion:fields.desc.value.trim(),
+          tags:fields.tags.value.trim(),
+          obligatorio:fields.obl.checked,
+          fecha_limite:fields.deadline.value||'',
+          activo:fields.act.checked,
+          updated_at:now
+        };
+      }
+    }else{
+      vs.unshift({
+        id:uid(), titulo:fields.titulo.value.trim(), url:fields.url.value.trim(),
+        descripcion:fields.desc.value.trim(), tags:fields.tags.value.trim(),
+        obligatorio:fields.obl.checked, fecha_limite:fields.deadline.value||'',
+        activo:fields.act.checked, created_at:now, updated_at:now
+      });
+    }
+    save(LS_VIDEOS, vs);
+    form.reset(); fields.id.value='';
+    renderAdmin(); alert('Guardado.');
+  });
+
+  function renderAdmin(){
+    const vs = JSON.parse(localStorage.getItem(LS_VIDEOS))||[];
+    const onlyObl = $('#adm_onlyObl').checked;
+    const onlyActive = $('#adm_onlyActive').checked;
+
+    const list = vs.filter(v=>{
+      if(onlyObl && !v.obligatorio) return false;
+      if(onlyActive && !v.activo) return false;
+      return true;
+    });
+
+    const adminTableBody = $('#adminTable tbody'); adminTableBody.innerHTML = list.map(v=>`
+      <tr>
+        <td>${v.titulo}</td>
+        <td>${v.obligatorio?'Sí':'No'}</td>
+        <td>${v.activo?'Sí':'No'}</td>
+        <td>${v.fecha_limite||'—'}</td>
+        <td>${(v.tags||'').split(',').map(t=>t.trim()).filter(Boolean).slice(0,3).map(t=>`<span class="pill">#${t}</span>`).join(' ')}</td>
+        <td class="right">
+          <div class="btn-group" style="justify-content:flex-end">
+            <button class="btn ghost icon" title="Editar" onclick='editVideo("${v.id}")'>Editar</button>
+            <button class="btn ghost icon" title="Probar" onclick='testVideo("${v.id}")'>Probar</button>
+            <button class="btn warn icon" title="Eliminar" onclick='delVideo("${v.id}")'>Eliminar</button>
+          </div>
+        </td>
+      </tr>
+    `).join('') || `<tr><td colspan="6">No hay videos.</td></tr>`;
+  }
+  $('#adm_onlyObl').onchange = renderAdmin;
+  $('#adm_onlyActive').onchange = renderAdmin;
+
+  window.editVideo = id=>{
+    const vs = JSON.parse(localStorage.getItem(LS_VIDEOS))||[];
+    const v = vs.find(x=>x.id===id); if(!v) return;
+    fields.id.value=v.id; fields.titulo.value=v.titulo; fields.url.value=v.url;
+    fields.desc.value=v.descripcion||''; fields.tags.value=v.tags||'';
+    fields.deadline.value=v.fecha_limite||''; fields.obl.checked=!!v.obligatorio;
+    fields.act.checked=!!v.activo; window.scrollTo({top:0,behavior:'smooth'});
+  };
+  window.testVideo = id=>{
+    const vs = JSON.parse(localStorage.getItem(LS_VIDEOS))||[]; const v = vs.find(x=>x.id===id);
+    if(v) window.open(v.url, '_blank', 'noopener');
+  };
+  window.delVideo = id=>{
+    if(!confirm('¿Eliminar este video?')) return;
+    const vs = JSON.parse(localStorage.getItem(LS_VIDEOS))||[];
+    save(LS_VIDEOS, vs.filter(x=>x.id!==id));
+    renderAdmin();
+  };
+
+  // ====== Import CSV ======
+  $('#csvInput').addEventListener('change', async (e)=>{
+    const file = e.target.files[0]; if(!file) return;
+    const text = await file.text();
+    // Formato: titulo,url,descripcion,tags,obligatorio,fecha_limite
+    const rows = text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+    const vs = JSON.parse(localStorage.getItem(LS_VIDEOS))||[];
+    const now = Date.now();
+    let added = 0;
+    rows.forEach((line,idx)=>{
+      const cols = line.split(',');
+      if(cols.length<2){ return; }
+      const [titulo,url,descripcion='',tags='',obligatorio='',fecha_limite=''] = cols;
+      if(idx===0 && /titulo/i.test(titulo) && /url/i.test(url)) return; // salta header
+      try{ new URL(url) }catch{ return }
+      vs.push({
+        id:uid(), titulo:titulo.trim(), url:url.trim(),
+        descripcion:descripcion.trim(), tags:tags.trim(),
+        obligatorio:/^true|1|sí|si$/i.test(obligatorio.trim()),
+        fecha_limite:fecha_limite.trim(), activo:true,
+        created_at:now, updated_at:now
+      });
+      added++;
+    });
+    save(LS_VIDEOS, vs);
+    renderAdmin();
+    alert(`Importados: ${added}`);
+    e.target.value='';
+  });
+
+  // ====== Registro Global ======
+  function renderLog(){
+    const log = ensure(LS_LOG, []);
+    const tbody = $('#logTable tbody'); tbody.innerHTML = '';
+    log.slice().reverse().forEach(row=>{
+      tbody.insertAdjacentHTML('beforeend', `
+        <tr><td>${row.user}</td><td>${row.video}</td><td>${row.event}</td><td>${fmtDateTime(row.at)}</td></tr>
+      `);
+    });
+  }
+
+  // ====== Inicio ======
+  restoreSession();
+  </script>
+</body>
+</html>
