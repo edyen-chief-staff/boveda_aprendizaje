@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bóveda de Aprendizaje</title>
+  <meta name="description" content="Repositorio minimalista de videos con registro de vistas." />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --blue:#0062FE;        /* primario */
+      --blue-600:#005ADA;    /* link/hover */
+      --blue-700:#0054D3;    /* hover sólido */
+      --navy:#2A317F;        /* headings */
+      --green:#2BEC03;       /* éxito */
+      --orange:#FA6421;      /* aviso/obligatorio */
+      --bg:#F7F9FF;          /* fondo muy claro */
+      --ink:#1E2330;         /* texto principal */
+      --muted:#5C667A;       /* texto secundario */
+      --card:#FFFFFF;        /* tarjetas */
+      --line:#E7ECF5;        /* bordes sutiles */
+      --radius:16px;
+      --shadow:0 8px 24px rgba(0,0,0,.06);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;background:var(--bg);color:var(--ink);
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      -webkit-font-smoothing:antialiased; line-height:1.4;
+    }
+    a{color:var(--blue);text-decoration:none}
+    a:hover{color:var(--blue-600)}
+    .wrap{max-width:1120px;margin:0 auto;padding:24px}
+    /* Header */
+    .header{
+      position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);z-index:30;
+      backdrop-filter:saturate(160%) blur(6px);
+    }
+    .brand{
+      display:flex;align-items:center;gap:14px;padding:12px 24px;
+    }
+    .brand img{height:36px;width:auto;display:block}
+    .brand h1{
+      margin:0;font-size:20px;font-weight:600;letter-spacing:.2px;color:var(--navy)
+    }
+    /* Tabs */
+    .tabs{display:flex;gap:8px;margin:18px 0 10px}
+    .tab{
+      background:#fff;border:1px solid var(--line);padding:10px 14px;border-radius:999px;
+      font-size:14px;color:var(--muted);cursor:pointer;transition:.22s all ease;
+    }
+    .tab.active{color:#fff;background:var(--blue);border-color:transparent;box-shadow:var(--shadow)}
+    /* Card */
+    .card{
+      background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+      box-shadow:var(--shadow);padding:18px;
+    }
+    /* Grid */
+    .grid{display:grid;gap:16px}
+    @media(min-width:880px){.grid.videos{grid-template-columns:repeat(3,1fr)}}
+    /* Forms */
+    label{font-size:13px;color:var(--muted);display:block;margin:10px 0 6px}
+    input[type=text], input[type=url], input[type=date], textarea, select{
+      width:100%;border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px 14px;
+      font:inherit;outline:none;transition:border .15s ease, box-shadow .15s ease;
+    }
+    textarea{min-height:86px;resize:vertical}
+    input:focus, textarea:focus, select:focus{
+      border-color:var(--blue-600);box-shadow:0 0 0 4px rgba(0,98,254,.08)
+    }
+    .row{display:grid;gap:12px}
+    @media(min-width:720px){.row.cols-2{grid-template-columns:1fr 1fr}}
+    /* Buttons */
+    .btn{
+      display:inline-flex;align-items:center;justify-content:center;gap:10px;
+      border-radius:12px;border:1px solid transparent;padding:10px 14px;font-weight:500;cursor:pointer;
+      transition:.2s ease all;font-size:14px;
+    }
+    .btn.primary{background:var(--blue);color:#fff}
+    .btn.primary:hover{background:var(--blue-700)}
+    .btn.ghost{background:#fff;border-color:var(--line);color:var(--ink)}
+    .btn.ghost:hover{border-color:var(--blue-600);color:var(--blue-600)}
+    .btn.warn{background:#fff;border-color:var(--orange);color:var(--orange)}
+    .btn.warn:hover{background:#FFF6F0}
+    .btn.icon{padding:8px 10px;border-radius:10px}
+    .btn-group{display:flex;gap:8px;flex-wrap:wrap}
+    /* Badges */
+    .badge{
+      display:inline-flex;align-items:center;gap:6px;border-radius:999px;border:1px solid var(--line);
+      padding:4px 10px;font-size:12px;color:var(--muted);background:#fff
+    }
+    .badge.obl{border-color:var(--orange);color:var(--orange)}
+    .badge.visto{border-color:var(--green);color:#1a7a00}
+    .muted{color:var(--muted)}
+    .title{margin:8px 0 12px;font-size:28px;color:var(--navy);letter-spacing:.2px}
+    .subtitle{margin:0 0 18px;color:var(--muted)}
+    .divider{height:1px;background:var(--line);margin:18px 0}
+    /* Tables */
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px 8px;text-align:left;border-bottom:1px solid var(--line);font-size:14px}
+    th{color:var(--muted);font-weight:500}
+    tr:last-child td{border-bottom:none}
+    .right{margin-left:auto}
+    .center{display:flex;align-items:center;gap:10px}
+    /* Helpers */
+    .hide{display:none !important}
+    .pill{padding:.2rem .6rem;border-radius:999px;background:#EFF4FF;color:var(--blue);font-size:12px}
+    .tag{display:inline-flex;align-items:center;background:#F4F8FF;border:1px solid var(--line);border-radius:999px;padding:4px 8px;font-size:12px;margin-right:6px;margin-top:6px}
+    .mini{font-size:12px}
+    .topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+    .spacer{flex:1}
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="wrap">
+      <div class="topbar">
+        <div class="brand">
+          <img src="Edyen.png" alt="edyen logo" onerror="this.classList.add('hide')">
+          <h1>Bóveda de Aprendizaje</h1>
+        </div>
+        <div class="spacer"></div>
+        <div class="center">
+          <input id="currentName" type="text" placeholder="Tu nombre" style="width:220px">
+          <button class="btn ghost" id="saveNameBtn" title="Guardar nombre">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <p class="subtitle">
+      En este espacio encontrarás un repositorio de videos que debemos ver con atención.
+      Por favor, revisa cada material y confirma tu visualización para llevar un registro adecuado.
+    </p>
+
+    <div class="tabs" role="tablist" aria-label="Secciones">
+      <button class="tab active" role="tab" aria-selected="true" id="tab-user">Usuario</button>
+      <button class="tab" role="tab" aria-selected="false" id="tab-admin">Administrador</button>
+      <button class="tab" role="tab" aria-selected="false" id="tab-reg">Registro de vistas</button>
+    </div>
+
+    <!-- USUARIO -->
+    <section id="view-user">
+      <div class="card" style="margin-bottom:14px">
+        <div class="row cols-2">
+          <div>
+            <label for="search">Buscar</label>
+            <input id="search" type="text" placeholder="Título, descripción o tag…">
+          </div>
+          <div class="center" style="justify-content:flex-start;margin-top:30px">
+            <label class="mini muted"><input type="checkbox" id="onlyObl"> Solo obligatorios</label>
+            <label class="mini muted"><input type="checkbox" id="onlyActive" checked> Solo activos</label>
+          </div>
+        </div>
+      </div>
+
+      <div id="videoList" class="grid videos"></div>
+
+      <div class="divider"></div>
+
+      <div class="card">
+        <h3 style="margin-top:0;color:var(--navy)">Mi progreso</h3>
+        <table id="progressTable">
+          <thead><tr><th>Video</th><th>Estado</th><th>Última apertura</th><th>Visto el</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ADMIN -->
+    <section id="view-admin" class="hide">
+      <div class="card" style="margin-bottom:16px">
+        <h3 style="margin-top:0;color:var(--navy)">Nuevo video</h3>
+        <form id="videoForm">
+          <div class="row cols-2">
+            <div>
+              <label>Título</label>
+              <input type="text" id="f_titulo" required>
+            </div>
+            <div>
+              <label>URL del video</label>
+              <input type="url" id="f_url" placeholder="https://..." required>
+            </div>
+          </div>
+          <label>Descripción</label>
+          <textarea id="f_desc" placeholder="Breve descripción"></textarea>
+          <div class="row cols-2">
+            <div>
+              <label>Tags (separados por comas)</label>
+              <input type="text" id="f_tags" placeholder="onboarding, seguridad">
+            </div>
+            <div class="row cols-2">
+              <div>
+                <label>Fecha límite</label>
+                <input type="date" id="f_deadline">
+              </div>
+              <div>
+                <label>&nbsp;</label>
+                <div class="center">
+                  <label class="mini muted"><input type="checkbox" id="f_obl"> Obligatorio</label>
+                  <label class="mini muted"><input type="checkbox" id="f_act" checked> Activo</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="btn-group" style="margin-top:12px">
+            <button type="submit" class="btn primary" id="submitBtn">Guardar video</button>
+            <button type="button" class="btn ghost" id="resetBtn">Limpiar</button>
+          </div>
+          <input type="hidden" id="f_id">
+        </form>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="topbar">
+          <h3 style="margin:0;color:var(--navy)">Listado de videos</h3>
+          <div class="spacer"></div>
+          <label class="mini muted"><input type="checkbox" id="adm_onlyObl"> Solo obligatorios</label>
+          <label class="mini muted"><input type="checkbox" id="adm_onlyActive" checked> Solo activos</label>
+          <label class="btn ghost icon">
+            Importar CSV
+            <input type="file" id="csvInput" accept=".csv" style="display:none">
+          </label>
+        </div>
+        <div class="divider"></div>
+        <table id="adminTable">
+          <thead>
+            <tr>
+              <th>Título</th><th>Obl.</th><th>Activo</th><th>Fecha límite</th><th>Tags</th><th class="right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;color:var(--navy)">Seguimiento por video</h3>
+        <table id="auditTable">
+          <thead><tr><th>Video</th><th>Vistos</th><th>No vistos</th><th>Última actividad</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- REGISTRO GLOBAL -->
+    <section id="view-reg" class="hide">
+      <div class="card">
+        <h3 style="margin-top:0;color:var(--navy)">Registro (todas las vistas)</h3>
+        <table id="logTable">
+          <thead><tr><th>Usuario</th><th>Video</th><th>Evento</th><th>Fecha/Hora</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+  // ======= Datos y utilidades (localStorage para demo) =======
+  const LS_VIDEOS = 'lv_videos';
+  const LS_VIEWS  = 'lv_views';  // { userName: { videoId: {status, openedAt, seenAt, lastWatchedAt, progressPercent} } }
+  const LS_LOG    = 'lv_log';    // [{user, videoId, video, event, at}]
+  const $ = sel => document.querySelector(sel);
+  const $$ = sel => Array.from(document.querySelectorAll(sel));
+
+  const fmtDateTime = ts => ts ? new Date(ts).toLocaleString() : '—';
+  const iconFor = url => /youtu/i.test(url) ? 'YouTube' : /vimeo/i.test(url) ? 'Vimeo' : 'Link';
+  const ensure = (k, v) => (localStorage.getItem(k) ?? localStorage.setItem(k, JSON.stringify(v)), JSON.parse(localStorage.getItem(k)));
+  const save   = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+  const uid    = () => String(Date.now()) + Math.random().toString(16).slice(2);
+
+  function seedIfEmpty(){
+    const videos = ensure(LS_VIDEOS, []);
+    if(!videos.length){
+      const sample = [
+        {id:uid(), titulo:'Onboarding general', url:'https://youtu.be/dQw4w9WgXcQ', descripcion:'Bienvenida y visión.', tags:'onboarding, cultura', obligatorio:true,  fecha_limite:'', activo:true, created_at:Date.now(), updated_at:Date.now()},
+        {id:uid(), titulo:'Cultura y valores',  url:'https://vimeo.com/76979871',  descripcion:'Nuestro ADN.',       tags:'cultura',             obligatorio:false, fecha_limite:'', activo:true, created_at:Date.now(), updated_at:Date.now()},
+        {id:uid(), titulo:'Políticas de seguridad', url:'https://example.com/video.mp4', descripcion:'Buenas prácticas.', tags:'seguridad, ISO', obligatorio:true, fecha_limite:'', activo:true, created_at:Date.now(), updated_at:Date.now()}
+      ];
+      save(LS_VIDEOS, sample);
+    }
+    ensure(LS_VIEWS, {});
+    ensure(LS_LOG, []);
+  }
+  seedIfEmpty();
+
+  // ======= Tabs =======
+  const views = { user:$('#view-user'), admin:$('#view-admin'), reg:$('#view-reg') };
+  $('#tab-user').onclick = ()=>switchTab('user');
+  $('#tab-admin').onclick= ()=>switchTab('admin');
+  $('#tab-reg').onclick  = ()=>switchTab('reg');
+  function switchTab(name){
+    $$('.tab').forEach(t=>t.classList.remove('active'));
+    $$('#view-user,#view-admin,#view-reg').forEach(v=>v.classList.add('hide'));
+    if(name==='user')  { $('#tab-user').classList.add('active'); views.user.classList.remove('hide'); }
+    if(name==='admin') { $('#tab-admin').classList.add('active'); views.admin.classList.remove('hide'); }
+    if(name==='reg')   { $('#tab-reg').classList.add('active');   views.reg.classList.remove('hide'); }
+  }
+
+  // ======= Nombre de usuario =======
+  const currentNameInput = $('#currentName');
+  const saveNameBtn = $('#saveNameBtn');
+  currentNameInput.value = localStorage.getItem('lv_user') || '';
+  saveNameBtn.onclick = ()=>{
+    const n = currentNameInput.value.trim();
+    if(!n){ alert('Escribe tu nombre.'); return; }
+    localStorage.setItem('lv_user', n);
+    renderAll();
+  };
+
+  // ======= Render Usuario =======
+  const videoList = $('#videoList');
+  const onlyObl = $('#onlyObl'), onlyActive = $('#onlyActive'), search = $('#search');
+  [onlyObl, onlyActive, search].forEach(el=>el.addEventListener('input', renderUser));
+
+  function renderUser(){
+    const name = localStorage.getItem('lv_user') || '';
+    const vids = JSON.parse(localStorage.getItem(LS_VIDEOS)) || [];
+    const views = JSON.parse(localStorage.getItem(LS_VIEWS)) || {};
+    const q = search.value.trim().toLowerCase();
+
+    const filtered = vids.filter(v=>{
+      if(onlyObl.checked && !v.obligatorio) return false;
+      if(onlyActive.checked && !v.activo) return false;
+      if(!q) return true;
+      return (v.titulo+v.descripcion+v.tags).toLowerCase().includes(q);
+    });
+
+    videoList.innerHTML = filtered.map(v=>{
+      const my = (views[name]||{})[v.id]||{};
+      const isVisto = my.status==='visto';
+      const tags = (v.tags||'').split(',').map(s=>s.trim()).filter(Boolean);
+      return `
+        <article class="card">
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div class="pill mini">${iconFor(v.url)}</div>
+            ${v.obligatorio ? `<span class="badge obl">Obligatorio</span>` : ``}
+            ${isVisto ? `<span class="badge visto">Visto</span>` : ``}
+            ${v.fecha_limite ? `<span class="badge" title="Fecha límite">⏰ ${v.fecha_limite}</span>` : ``}
+            ${!v.activo ? `<span class="badge warn">Inactivo</span>` : ``}
+          </div>
+          <h3 style="margin:.6rem 0 .2rem;color:var(--ink)">${v.titulo}</h3>
+          <p class="muted" style="margin:.2rem 0 .6rem">${v.descripcion||''}</p>
+          <div>${tags.map(t=>`<span class="tag">#${t}</span>`).join('')}</div>
+          <div class="btn-group" style="margin-top:12px">
+            <button class="btn primary" onclick="openVideo('${v.id}')">Ver video</button>
+            <button class="btn ghost" ${isVisto?'disabled':''} onclick="markSeen('${v.id}')">${isVisto?'Marcado como visto':'Marcar como visto'}</button>
+          </div>
+        </article>
+      `;
+    }).join('') || `<div class="card">No hay videos que coincidan.</div>`;
+
+    // Progreso personal
+    const tbody = $('#progressTable tbody'); tbody.innerHTML = '';
+    const myV = views[name]||{};
+    (JSON.parse(localStorage.getItem(LS_VIDEOS))||[]).forEach(v=>{
+      const s = myV[v.id]||{};
+      tbody.insertAdjacentHTML('beforeend', `
+        <tr>
+          <td>${v.titulo}</td>
+          <td>${s.status==='visto' ? '<span class="badge visto">Visto</span>' : '—'}</td>
+          <td>${fmtDateTime(s.openedAt)}</td>
+          <td>${fmtDateTime(s.seenAt)}</td>
+        </tr>
+      `);
+    });
+  }
+
+  window.openVideo = (id)=>{
+    const vs = JSON.parse(localStorage.getItem(LS_VIDEOS))||[];
+    const v = vs.find(x=>x.id===id); if(!v) return;
+    const name = localStorage.getItem('lv_user')||'Invitado';
+    const views = ensure(LS_VIEWS, {});
+    const my = views[name] = views[name] || {};
+    const rec = my[id] = my[id] || {};
+    rec.openedAt = Date.now();
+    save(LS_VIEWS, views);
+
+    const log = ensure(LS_LOG, []); log.push({user:name, videoId:id, video:v.titulo, event:'open', at:Date.now()}); save(LS_LOG, log);
+
+    window.open(v.url, '_blank', 'noopener');
+    renderAll();
+  };
+
+  window.markSeen = (id)=>{
+    const name = localStorage.getItem('lv_user')||'Invitado';
+    const views = ensure(LS_VIEWS, {});
+    const my = views[name] = views[name] || {};
+    const rec = my[id] = my[id] || {};
+    rec.status='visto'; rec.seenAt = Date.now();
+    save(LS_VIEWS, views);
+
+    const vs = JSON.parse(localStorage.getItem(LS_VIDEOS))||[];
+    const v = vs.find(x=>x.id===id);
+    const log = ensure(LS_LOG, []); log.push({user:name, videoId:id, video:v?.titulo||'', event:'seen', at:Date.now()}); save(LS_LOG, log);
+
+    renderAll();
+  };
+
+  // ======= Admin: CRUD =======
+  const form = $('#videoForm');
+  const fields = {
+    id:$('#f_id'), titulo:$('#f_titulo'), url:$('#f_url'), desc:$('#f_desc'),
+    tags:$('#f_tags'), deadline:$('#f_deadline'), obl:$('#f_obl'), act:$('#f_act')
+  };
+  $('#resetBtn').onclick = ()=>{ form.reset(); fields.id.value=''; fields.act.checked=true; };
+
+  form.addEventListener('submit', e=>{
+    e.preventDefault();
+    try{
+      new URL(fields.url.value);
+    }catch{ alert('URL inválida.'); return; }
+
+    const vs = JSON.parse(localStorage.getItem(LS_VIDEOS))||[];
+    const now = Date.now();
+    if(fields.id.value){
+      const i = vs.findIndex(x=>x.id===fields.id.value);
+      if(i>-1){
+        vs[i] = {...vs[i],
+          titulo:fields.titulo.value.trim(),
+          url:fields.url.value.trim(),
+          descripcion:fields.desc.value.trim(),
+          tags:fields.tags.value.trim(),
+          obligatorio:fields.obl.checked,
+          fecha_limite:fields.deadline.value||'',
+          activo:fields.act.checked,
+          updated_at:now
+        };
+      }
+    }else{
+      vs.unshift({
+        id:uid(), titulo:fields.titulo.value.trim(), url:fields.url.value.trim(),
+        descripcion:fields.desc.value.trim(), tags:fields.tags.value.trim(),
+        obligatorio:fields.obl.checked, fecha_limite:fields.deadline.value||'',
+        activo:fields.act.checked, created_at:now, updated_at:now
+      });
+    }
+    save(LS_VIDEOS, vs);
+    form.reset(); fields.id.value='';
+    renderAll(); alert('Guardado.');
+  });
+
+  const adminTableBody = $('#adminTable tbody');
+  function renderAdmin(){
+    const vs = JSON.parse(localStorage.getItem(LS_VIDEOS))||[];
+    const onlyObl = $('#adm_onlyObl').checked;
+    const onlyActive = $('#adm_onlyActive').checked;
+
+    const list = vs.filter(v=>{
+      if(onlyObl && !v.obligatorio) return false;
+      if(onlyActive && !v.activo) return false;
+      return true;
+    });
+
+    adminTableBody.innerHTML = list.map(v=>`
+      <tr>
+        <td>${v.titulo}</td>
+        <td>${v.obligatorio?'Sí':'No'}</td>
+        <td>${v.activo?'Sí':'No'}</td>
+        <td>${v.fecha_limite||'—'}</td>
+        <td>${(v.tags||'').split(',').map(t=>t.trim()).filter(Boolean).slice(0,3).map(t=>`<span class="pill">#${t}</span>`).join(' ')}</td>
+        <td class="right">
+          <div class="btn-group" style="justify-content:flex-end">
+            <button class="btn ghost icon" title="Editar" onclick='editVideo("${v.id}")'>Editar</button>
+            <button class="btn ghost icon" title="Probar" onclick='testVideo("${v.id}")'>Probar</button>
+            <button class="btn warn icon" title="Eliminar" onclick='delVideo("${v.id}")'>Eliminar</button>
+          </div>
+        </td>
+      </tr>
+    `).join('') || `<tr><td colspan="6">No hay videos.</td></tr>`;
+
+    // Seguimiento por video
+    const auditBody = $('#auditTable tbody'); auditBody.innerHTML = '';
+    const views = ensure(LS_VIEWS, {});
+    list.forEach(v=>{
+      let vistos=0, novistos=0, last=0;
+      const users = Object.keys(views);
+      if(!users.length){ novistos='—'; }
+      users.forEach(u=>{
+        const r = (views[u]||{})[v.id];
+        if(r?.status==='visto') vistos++; else novistos++;
+        last = Math.max(last, r?.openedAt||0, r?.seenAt||0);
+      });
+      auditBody.insertAdjacentHTML('beforeend', `
+        <tr>
+          <td>${v.titulo}</td>
+          <td>${vistos}</td>
+          <td>${novistos}</td>
+          <td>${fmtDateTime(last)}</td>
+        </tr>
+      `);
+    });
+  }
+  $('#adm_onlyObl').onchange = renderAdmin;
+  $('#adm_onlyActive').onchange = renderAdmin;
+
+  window.editVideo = id=>{
+    const vs = JSON.parse(localStorage.getItem(LS_VIDEOS))||[];
+    const v = vs.find(x=>x.id===id); if(!v) return;
+    fields.id.value=v.id; fields.titulo.value=v.titulo; fields.url.value=v.url;
+    fields.desc.value=v.descripcion||''; fields.tags.value=v.tags||'';
+    fields.deadline.value=v.fecha_limite||''; fields.obl.checked=!!v.obligatorio;
+    fields.act.checked=!!v.activo; window.scrollTo({top:0,behavior:'smooth'});
+  };
+  window.testVideo = id=>{
+    const vs = JSON.parse(localStorage.getItem(LS_VIDEOS))||[]; const v = vs.find(x=>x.id===id);
+    if(v) window.open(v.url, '_blank', 'noopener');
+  };
+  window.delVideo = id=>{
+    if(!confirm('¿Eliminar este video?')) return;
+    const vs = JSON.parse(localStorage.getItem(LS_VIDEOS))||[];
+    save(LS_VIDEOS, vs.filter(x=>x.id!==id));
+    renderAll();
+  };
+
+  // ======= Import CSV =======
+  $('#csvInput').addEventListener('change', async (e)=>{
+    const file = e.target.files[0]; if(!file) return;
+    const text = await file.text();
+    // Formato: titulo,url,descripcion,tags,obligatorio,fecha_limite
+    const rows = text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+    const vs = JSON.parse(localStorage.getItem(LS_VIDEOS))||[];
+    const now = Date.now();
+    let added = 0;
+    rows.forEach((line,idx)=>{
+      const cols = line.split(','); // Parser simple
+      if(cols.length<2){ return; }
+      const [titulo,url,descripcion='',tags='',obligatorio='',fecha_limite=''] = cols;
+      if(idx===0 && /titulo/i.test(titulo) && /url/i.test(url)) return; // salta header
+      try{ new URL(url) }catch{ return }
+      vs.push({
+        id:uid(), titulo:titulo.trim(), url:url.trim(),
+        descripcion:descripcion.trim(), tags:tags.trim(),
+        obligatorio:/^true|1|sí|si$/i.test(obligatorio.trim()),
+        fecha_limite:fecha_limite.trim(), activo:true,
+        created_at:now, updated_at:now
+      });
+      added++;
+    });
+    save(LS_VIDEOS, vs);
+    renderAll();
+    alert(`Importados: ${added}`);
+    e.target.value='';
+  });
+
+  // ======= Registro Global =======
+  function renderLog(){
+    const log = ensure(LS_LOG, []);
+    const tbody = $('#logTable tbody'); tbody.innerHTML = '';
+    log.slice().reverse().forEach(row=>{
+      tbody.insertAdjacentHTML('beforeend', `
+        <tr><td>${row.user}</td><td>${row.video}</td><td>${row.event}</td><td>${fmtDateTime(row.at)}</td></tr>
+      `);
+    });
+  }
+
+  // ======= Render maestro =======
+  function renderAll(){
+    renderUser();
+    renderAdmin();
+    renderLog();
+  }
+  renderAll();
+
+  </script>
+</body>
+</html>
